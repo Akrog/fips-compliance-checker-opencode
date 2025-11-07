@@ -42,7 +42,15 @@ Example:
 
 ## Available Plugins
 
-- **fips-compliance-checker** - FIPS 140-3 compliance auditing for containerized applications
+### fips-compliance-checker
+
+FIPS 140-3 compliance auditing for containerized applications on RHEL 9+.
+
+**Usage:**
+- Natural language: "Check if my app is FIPS compliant"
+- Slash command: `/fips-scan` or `/fips-scan quay.io/myorg/myapp:v1.2.3`
+
+See [fips-compliance-checker/README.md](./fips-compliance-checker/README.md) for detailed documentation.
 
 ## Verification
 
