@@ -6,7 +6,7 @@ Perform a comprehensive FIPS 140-3 compliance audit for containerized applicatio
 
 {?image:Container image reference (optional, e.g., quay.io/myorg/myapp:latest)}
 
-Launch the fips-compliance-checker agent to conduct a thorough security analysis {?image:of the container image `{image}`:of the current project}, scanning for:
+Launch the fips-compliance-checker:fips-compliance-checker agent to conduct a thorough security analysis {?image:of the container image `{image}`:of the current project}, scanning for:
 
 - Non-compliant cryptographic libraries and dependencies
 - Prohibited or deprecated algorithms (MD5, SHA-1, DES, 3DES, RC4, etc.)
@@ -24,4 +24,4 @@ The agent will provide:
 - Automated fix scripts where applicable
 - Verification commands to confirm compliance
 
-Use the Task tool with subagent_type="fips-compliance-checker" to perform this analysis.
+Use the Task tool with subagent_type="fips-compliance-checker:fips-compliance-checker" to perform this analysis.
