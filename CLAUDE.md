@@ -74,10 +74,10 @@ Each plugin is a self-contained directory containing:
 - Provides detailed remediation guidance with code examples
 - Generates compliance scores and automated fix scripts
 
-**Slash Command**: `/fips-scan [image]`
+**Slash Command**: `/fips-compliance-checker:fips-scan [image]`
 - Explicit invocation for FIPS compliance scanning
 - Optional container image argument for targeted analysis
-- Fully-qualified form: `/fips-compliance-checker:fips-scan`
+- Must use fully-qualified form (currently required by Claude Code CLI)
 
 **Key Capabilities**:
 - Multi-language support (Python, Go, Rust, Java, C/C++)
@@ -194,17 +194,13 @@ Use the Task tool with subagent_type="{agent-name}" to perform [action].
 
 ### Command Invocation
 
-**Short form** (when no conflicts):
-```
-/command-name
-/command-name arg1 arg2
-```
-
-**Fully-qualified form** (always works, required when name conflicts exist):
+**Fully-qualified form** (currently required):
 ```
 /plugin-name:command-name
 /plugin-name:command-name arg1 arg2
 ```
+
+Note: Claude Code CLI currently requires the fully-qualified format. Short form `/command-name` is not currently supported, though the syntax may be added in future versions.
 
 ### Argument Syntax
 

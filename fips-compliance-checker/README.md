@@ -23,18 +23,17 @@ After adding the marketplace (see [main README](../README.md)), install this plu
 
 ### Slash Command (Explicit)
 
-Use the `/fips-scan` command for direct invocation:
+Use the fully-qualified `/fips-compliance-checker:fips-scan` command for direct invocation:
 
 ```bash
 # Scan the current project
-/fips-scan
+/fips-compliance-checker:fips-scan
 
 # Scan a specific container image
-/fips-scan quay.io/myorg/myapp:v1.2.3
-
-# If there's a command name conflict, use the fully-qualified form
-/fips-compliance-checker:fips-scan
+/fips-compliance-checker:fips-scan quay.io/myorg/myapp:v1.2.3
 ```
+
+Note: Claude Code CLI currently requires the fully-qualified format `/plugin-name:command-name`.
 
 ### Natural Language (Auto-selection)
 
