@@ -7,7 +7,7 @@ A collection of specialized Claude Code plugins providing domain-specific capabi
 From within a Claude Code session, add this marketplace using the following slash command:
 
 ```
-/plugin marketplace add https://gitlab.cee.redhat.com/gryan/claude-plugin-marketplace.git
+/plugin marketplace add https://gitlab.cee.redhat.com/gryan/gryan-claude-plugins.git
 ```
 
 Verify the marketplace was added:

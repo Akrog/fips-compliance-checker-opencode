@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "fips-compliance-checker",
-      "source": "./plugins/fips-compliance-checker",
+      "source": "./fips-compliance-checker",
       "description": "A plugin providing a subagent to scan a source code project for potential FIPS compliance issues",
       "version": "0.1.0",
       "author": {
