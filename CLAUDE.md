@@ -247,7 +247,6 @@ The FIPS agent follows a strict 6-phase scanning process:
 **Output includes**:
 - Compliance score (0-100) with breakdown by category
 - JSON findings with severity, location, and remediation
-- Automated remediation scripts
 - Verification commands
 
 **Severity Levels**:

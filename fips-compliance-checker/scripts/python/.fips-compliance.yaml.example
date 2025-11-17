@@ -146,14 +146,6 @@ reporting:
   # Default: true
   include_code_examples: true
 
-  # Generate automated remediation script
-  # Default: false
-  generate_fix_script: false
-
-  # Path for automated remediation script
-  # Default: auto-remediate-fips.sh
-  fix_script_path: auto-remediate-fips.sh
-
   # Include false-positive analysis in output
   # Default: true
   include_false_positive_check: true

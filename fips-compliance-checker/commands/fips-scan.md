@@ -21,7 +21,6 @@ The agent will provide:
 - Specific file locations and line numbers for violations
 - Actionable remediation steps with code examples
 - Compliance score breakdown
-- Automated fix scripts where applicable
 - Verification commands to confirm compliance
 
 Use the Task tool with subagent_type="fips-compliance-checker:fips-compliance-checker" to perform this analysis.

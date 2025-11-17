@@ -127,7 +127,6 @@ Total Score:             [X/100]
 - Specific action items (REPLACE, REMOVE, CONFIGURE, UPDATE)
 - Priority levels (IMMEDIATE, HIGH, MEDIUM, LOW)
 - Code examples (before/after)
-- Automated fix scripts
 - Verification commands
 
 ## Examples
