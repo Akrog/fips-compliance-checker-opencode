@@ -1,0 +1,159 @@
+# FIPS 140-3 Compliance Scanner Configuration Example
+# Copy this file to .fips-compliance.yaml in your project root and customize
+
+scan:
+  # Paths to include in the scan (relative to project root)
+  # Default: scan everything
+  include:
+    - src/**
+    - lib/**
+    - app/**
+    # - "*.py"  # Scan all Python files in root
+
+  # Paths to exclude from the scan
+  # Useful for skipping test code, examples, documentation, virtual environments
+  exclude:
+    - tests/**
+    - test/**
+    - examples/**
+    - docs/**
+    - venv/**
+    - .venv/**
+    - env/**
+    - __pycache__/**
+    - "*.pyc"
+
+  # Whether to report findings in non-production code (tests, examples, docs)
+  # If true: report everything but flag with context metadata
+  # If false: completely skip excluded paths
+  # Default: true (report everything with context)
+  report_non_production: true
+
+  # Minimum severity level to cause non-zero exit code
+  # Options: critical, high, medium, low
+  # Default: high
+  fail_on: high
+
+  # Maximum number of findings to report (0 = unlimited)
+  # Useful for preventing overwhelming output on large codebases
+  # Default: 0 (unlimited)
+  max_findings: 0
+
+# Severity adjustment rules based on context
+# These rules can downgrade severity for specific patterns
+context_rules:
+  - pattern: "usedforsecurity=False"
+    adjust_severity: low
+    reason: "Non-security usage of hash function (checksums, caching)"
+
+  - pattern: "hashlib.md5.*usedforsecurity=False"
+    adjust_severity: low
+    reason: "MD5 explicitly marked as non-security usage"
+
+  - pattern: "hashlib.sha1.*usedforsecurity=False"
+    adjust_severity: low
+    reason: "SHA-1 explicitly marked as non-security usage"
+
+# Custom package allowlist
+# Packages that would normally be flagged but are allowed in this project
+# Use sparingly and document why each package is needed
+allowed_packages:
+  # Example: pyjwt is flagged as HIGH but we've verified our usage is compliant
+  # - name: pyjwt
+  #   reason: "Used with HS256 algorithm only, verified FIPS-compliant"
+  #   verified_by: "Security Team"
+  #   verified_date: "2025-01-15"
+
+# CI/CD integration settings
+ci:
+  # Generate JUnit XML output for CI systems
+  # Default: false
+  junit_xml: false
+
+  # Path for JUnit XML output
+  # Default: fips-compliance-junit.xml
+  junit_xml_path: fips-compliance-junit.xml
+
+  # Fail build on any findings (ignores fail_on setting)
+  # Default: false
+  strict_mode: false
+
+# Output settings
+output:
+  # Output format: json, text, html
+  # Default: json
+  format: json
+
+  # Verbosity level: quiet, normal, verbose
+  # quiet: only show summary
+  # normal: show summary and findings
+  # verbose: show all details including context
+  # Default: normal
+  verbosity: normal
+
+  # Show progress indicators during scanning
+  # Default: true
+  show_progress: true
+
+  # Colorize text output (ignored for JSON format)
+  # Default: true
+  colorize: true
+
+# Bandit integration
+bandit:
+  # Bandit configuration file (optional)
+  # If specified, this config will be passed to Bandit
+  # config_file: .bandit.yaml
+
+  # Bandit severity level threshold
+  # Options: low, medium, high
+  # Default: low (report all Bandit findings)
+  severity_threshold: low
+
+  # Bandit confidence level threshold
+  # Options: low, medium, high
+  # Default: low (report all confidence levels)
+  confidence_threshold: low
+
+  # Additional Bandit tests to skip
+  # Default: none (all crypto-related tests are run)
+  skip_tests: []
+    # - B101  # Example: skip assert_used test
+
+# Runtime verification
+runtime:
+  # Perform runtime FIPS verification checks
+  # Requires Python and cryptography library to be installed
+  # Default: true
+  verify_fips_enabled: true
+
+  # Check that cryptography library links to system OpenSSL
+  # Default: true
+  verify_system_openssl: true
+
+  # Fail if runtime verification cannot be performed
+  # If false, runtime check failures are warnings only
+  # Default: false
+  require_runtime_check: false
+
+# Reporting
+reporting:
+  # Include remediation suggestions in output
+  # Default: true
+  include_remediation: true
+
+  # Include code examples (before/after) in remediation
+  # Default: true
+  include_code_examples: true
+
+  # Generate automated remediation script
+  # Default: false
+  generate_fix_script: false
+
+  # Path for automated remediation script
+  # Default: auto-remediate-fips.sh
+  fix_script_path: auto-remediate-fips.sh
+
+  # Include false-positive analysis in output
+  # Default: true
+  include_false_positive_check: true

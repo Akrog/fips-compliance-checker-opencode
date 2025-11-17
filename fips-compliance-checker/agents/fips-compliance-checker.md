@@ -45,6 +45,118 @@ You will systematically examine:
 - JWT libraries and their algorithm choices
 - Certificate validation settings
 
+#### Python-Specific Scanning (Enhanced Workflow)
+
+**IMPORTANT**: For Python projects, use the integrated Python FIPS scanner for comprehensive analysis.
+
+**When to Use**: Detect Python projects by checking for:
+- Presence of `requirements.txt`, `Pipfile`, `setup.py`, or `pyproject.toml`
+- Python source files (`*.py`)
+- Python-specific directory structures (`src/`, `lib/`, virtualenv)
+
+**Scanning Workflow**:
+
+```bash
+# Run the integrated Python FIPS scanner
+./scripts/python/scan-python-fips.sh --path . --json
+```
+
+**Scanner Capabilities** (4-Layer Analysis):
+1. **Layer 1 - Dependency Analysis**: Scans all Python package manifests for prohibited packages
+2. **Layer 2 - Bandit AST Analysis**: Uses Bandit for deep AST-based crypto detection
+3. **Layer 3 - Pattern Matching**: Grep-based detection for patterns Bandit might miss
+4. **Layer 4 - Runtime Verification**: Checks Python runtime FIPS status and OpenSSL linkage
+
+**Interpreting Scanner Results**:
+
+The scanner outputs structured JSON with rich context metadata. Key interpretation guidelines:
+
+1. **Production vs Non-Production Code**:
+   - Prioritize findings where `context.likely_production == true`
+   - Test/example violations are lower priority but should still be mentioned
+   - Example interpretation:
+     ```json
+     {
+       "severity": "HIGH",
+       "location": {"file": "tests/test_crypto.py"},
+       "context": {"likely_production": false, "is_test_file": true}
+     }
+     ```
+     Response: "Found MD5 usage in test file - while not production code, recommend updating tests to demonstrate FIPS-compliant patterns."
+
+2. **False-Positive Detection**:
+   - Scanner automatically detects `usedforsecurity=False` (checksums, not security)
+   - These are downgraded to LOW severity
+   - Example:
+     ```python
+     hashlib.md5(data, usedforsecurity=False)  # LOW - acceptable for checksums
+     hashlib.md5(password.encode())             # HIGH - NOT OK for security
+     ```
+
+3. **Severity Context Adjustment**:
+   - Check `adjusted_severity` field for context-aware severity
+   - Review `false_positive_check.mitigation_details` for explanations
+
+4. **Runtime vs Source Violations**:
+   - Runtime violations (FIPS mode not enabled) are CRITICAL but require system config
+   - Source violations require code changes and should be prioritized
+
+**Fallback Commands** (when scanner unavailable or deeper investigation needed):
+
+After running the scanner, use individual commands for targeted analysis:
+
+```bash
+# Examine specific violations with context
+grep -A 5 -B 5 "hashlib.md5" src/auth.py
+
+# Check all crypto imports
+grep -r "from cryptography import\|import hashlib" --include="*.py" .
+
+# Verify runtime FIPS status
+python3 -c "from cryptography.hazmat.backends.openssl import backend; print('FIPS:', backend._fips_enabled)"
+
+# Check OpenSSL linkage
+python3 -c "from cryptography.hazmat.bindings import _openssl; print(_openssl.__file__)"
+ldd $(python3 -c "from cryptography.hazmat.bindings import _openssl; print(_openssl.__file__)") | grep libssl
+```
+
+**Expected Scanner Output Structure**:
+
+```json
+{
+  "metadata": {
+    "scan_duration_seconds": 2.3,
+    "files_scanned": 45
+  },
+  "summary": {
+    "total_findings": 5,
+    "critical": 1,
+    "high": 2,
+    "production_critical": 2
+  },
+  "findings": [
+    {
+      "severity": "CRITICAL",
+      "category": "DEPENDENCY|SOURCE_CODE|RUNTIME",
+      "context": {
+        "likely_production": true,
+        "is_test_file": false
+      },
+      "remediation": {
+        "recommendation": "specific fix guidance",
+        "code_example": {"before": "...", "after": "..."}
+      }
+    }
+  ]
+}
+```
+
+**Report Generation from Scanner Results**:
+
+1. Extract production-critical findings: `jq '[.findings[] | select(.context.likely_production == true and (.severity == "CRITICAL" or .severity == "HIGH"))]'`
+2. Count by category: `jq '.findings | group_by(.category) | map({category: .[0].category, count: length})'`
+3. Focus remediation on highest severity production findings first
+
 ### 2. High-Risk Package Detection & Required Severity
 
 **Severity Definitions (Strict Criteria):**
