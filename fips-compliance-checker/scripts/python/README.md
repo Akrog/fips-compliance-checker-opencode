@@ -19,25 +19,30 @@ This scanner performs multi-layered analysis to ensure Python applications compl
 
 ### Required
 - Bash 4.0+
-- Python 3.9+
 - `jq` (JSON processor)
-- `bandit` (Python security linter)
+- Container runtime: `podman` or `docker`
 
 ### Installation
 
 ```bash
-# Install Bandit
-pip install bandit
+# Install podman (recommended for RHEL/Fedora)
+sudo dnf install podman
 
-# Or on RHEL/Fedora
-sudo dnf install python3-bandit
+# Or install docker
+# See https://docs.docker.com/get-docker/
 
-# Or on Debian/Ubuntu
-sudo apt install python3-bandit
+# Install jq
+sudo dnf install jq  # RHEL/Fedora
+# or
+sudo apt install jq  # Debian/Ubuntu
 
 # Verify installation
-bandit --version
+podman --version
+# or
+docker --version
 ```
+
+**Note**: The scanner uses Bandit in a container (`ghcr.io/pycqa/bandit/bandit:latest`). The image (~50MB) will be automatically pulled on first run.
 
 ## Usage
 
@@ -217,7 +222,10 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y jq
-          pip install bandit
+
+      - name: Pull Bandit container image
+        run: |
+          docker pull ghcr.io/pycqa/bandit/bandit:latest
 
       - name: Run FIPS compliance scan
         run: |
@@ -245,10 +253,12 @@ jobs:
 
 ```yaml
 fips_compliance:
-  image: python:3.11
+  image: docker:latest
+  services:
+    - docker:dind
   before_script:
-    - apt-get update && apt-get install -y jq
-    - pip install bandit
+    - apk add --no-cache bash jq
+    - docker pull ghcr.io/pycqa/bandit/bandit:latest
   script:
     - ./scripts/python/scan-python-fips.sh --json > fips-results.json
     - |
@@ -424,15 +434,35 @@ update-crypto-policies --show
 
 ## Troubleshooting
 
-### Bandit not found
+### Container runtime not found
 
 ```bash
-# Install Bandit
-pip install bandit
+# Install podman (recommended for RHEL/Fedora)
+sudo dnf install podman
 
-# Or use system package manager
-sudo dnf install python3-bandit  # RHEL/Fedora
-sudo apt install python3-bandit  # Debian/Ubuntu
+# Or install docker
+# See https://docs.docker.com/get-docker/
+
+# Verify installation
+podman --version
+# or
+docker --version
+```
+
+### Bandit container image pull fails
+
+```bash
+# Manually pull the image
+podman pull ghcr.io/pycqa/bandit/bandit:latest
+# or
+docker pull ghcr.io/pycqa/bandit/bandit:latest
+
+# For air-gapped environments, download and load the image:
+# 1. On a connected system:
+podman save -o bandit.tar ghcr.io/pycqa/bandit/bandit:latest
+# 2. Transfer bandit.tar to air-gapped system
+# 3. On air-gapped system:
+podman load -i bandit.tar
 ```
 
 ### Permission denied

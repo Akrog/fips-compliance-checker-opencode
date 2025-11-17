@@ -9,19 +9,41 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Source the context analyzer
 source "$SCRIPT_DIR/context-analyzer.sh"
 
-# Check if Bandit is installed
+# Bandit container image
+BANDIT_IMAGE="ghcr.io/pycqa/bandit/bandit:latest"
+
+# Detect available container runtime
+detect_container_runtime() {
+    if command -v podman &> /dev/null; then
+        echo "podman"
+        return 0
+    elif command -v docker &> /dev/null; then
+        echo "docker"
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Check if container runtime is available
 check_bandit_available() {
-    if ! command -v bandit &> /dev/null; then
-        echo "ERROR: Bandit is required but not installed" >&2
+    local runtime
+    if ! runtime=$(detect_container_runtime); then
+        echo "ERROR: Container runtime (podman or docker) is required but not installed" >&2
         echo "" >&2
-        echo "To install Bandit:" >&2
-        echo "  pip install bandit" >&2
+        echo "To install a container runtime:" >&2
+        echo "  dnf install podman  # on RHEL/Fedora" >&2
         echo "  # or" >&2
-        echo "  dnf install python3-bandit  # on RHEL/Fedora" >&2
-        echo "  apt install python3-bandit  # on Debian/Ubuntu" >&2
+        echo "  apt install podman  # on Debian/Ubuntu" >&2
+        echo "  # or install Docker from https://docs.docker.com/get-docker/" >&2
+        echo "" >&2
+        echo "The Bandit scanner runs in a container using: $BANDIT_IMAGE" >&2
         echo "" >&2
         return 1
     fi
+
+    # Store the runtime for use in other functions
+    CONTAINER_RUNTIME="$runtime"
     return 0
 }
 
@@ -45,8 +67,14 @@ run_bandit_scan() {
     # B506 - YAML load
     # B507 - SSH no host key verification
 
+    # Run Bandit in a container with the target path mounted
+    # Use :Z for SELinux labeling on RHEL/Fedora systems
     local bandit_output
-    bandit_output=$(bandit -f json -r "$target_path" \
+    bandit_output=$("$CONTAINER_RUNTIME" run --rm \
+        -v "${target_path}:/scan:Z" \
+        -w /scan \
+        "$BANDIT_IMAGE" \
+        -f json -r /scan \
         -t B303,B304,B305,B311,B324,B501,B502,B503,B504,B505 \
         --exclude '**/venv/*,**/.venv/*,**/env/*,**/build/*,**/dist/*,**/__pycache__/*' \
         2>/dev/null || true)
@@ -89,9 +117,21 @@ convert_bandit_findings() {
         issue_text=$(echo "$result" | jq -r '.issue_text')
         code=$(echo "$result" | jq -r '.code')
 
+        # Translate container path (/scan/...) back to host path
+        # The container mounts target_path as /scan
+        local host_filename
+        host_filename="${filename#/scan}"
+        if [ "$host_filename" = "$filename" ]; then
+            # Path didn't start with /scan, use as-is
+            host_filename="$filename"
+        else
+            # Prepend target_path
+            host_filename="${target_path}${host_filename}"
+        fi
+
         # Get relative path
         local rel_path
-        rel_path=$(realpath --relative-to="$target_path" "$filename" 2>/dev/null || echo "$filename")
+        rel_path=$(realpath --relative-to="$target_path" "$host_filename" 2>/dev/null || echo "$host_filename")
 
         # Get context metadata
         local context
@@ -294,18 +334,21 @@ main() {
     # Ensure target path is absolute
     target_path=$(realpath "$target_path")
 
-    echo "# Checking if Bandit is available..." >&2
+    echo "# Checking if container runtime is available..." >&2
     if ! check_bandit_available; then
         # Return error JSON
-        cat <<'EOF'
+        cat <<EOF
 {
-  "error": "Bandit not available",
+  "error": "Container runtime (podman or docker) not available",
   "findings": [],
-  "bandit_required": true
+  "container_runtime_required": true,
+  "bandit_image": "$BANDIT_IMAGE"
 }
 EOF
         return 1
     fi
+
+    echo "# Using container runtime: $CONTAINER_RUNTIME" >&2
 
     echo "# Running Bandit security scan..." >&2
     local bandit_output
@@ -315,10 +358,14 @@ EOF
     local findings
     findings=$(convert_bandit_findings "$bandit_output" "$target_path")
 
+    # Get Bandit version from container
+    local bandit_version
+    bandit_version=$("$CONTAINER_RUNTIME" run --rm "$BANDIT_IMAGE" --version 2>&1 | head -n1 || echo 'unknown')
+
     # Output results
     cat <<EOF
 {
-  "bandit_version": "$(bandit --version 2>&1 | head -n1 || echo 'unknown')",
+  "bandit_version": "$bandit_version",
   "findings": $findings
 }
 EOF

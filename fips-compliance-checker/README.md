@@ -19,6 +19,29 @@ After adding the marketplace (see [main README](../README.md)), install this plu
 /plugin install fips-compliance-checker@gryan-claude-plugins
 ```
 
+## Prerequisites
+
+The Python scanner uses Bandit in a containerized environment and requires one of the following container runtimes:
+
+- **Podman** (recommended for RHEL/Fedora):
+  ```bash
+  dnf install podman
+  ```
+
+- **Docker**:
+  ```bash
+  # See https://docs.docker.com/get-docker/
+  ```
+
+On first run, the scanner will automatically pull the Bandit container image (`ghcr.io/pycqa/bandit/bandit:latest`, ~50MB).
+
+**Air-gapped environments**: Pre-pull the image and ensure it's available in your local registry:
+```bash
+podman pull ghcr.io/pycqa/bandit/bandit:latest
+# or
+docker pull ghcr.io/pycqa/bandit/bandit:latest
+```
+
 ## Usage
 
 ### Slash Command (Explicit)
