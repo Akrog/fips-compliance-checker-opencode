@@ -25,7 +25,7 @@ Execute each phase in order and report progress:
 ```
 Phase 1/6: Dependency Analysis... [scanning requirements files, manifests]
 Phase 2/6: Source Code Analysis... [scanning cryptographic operations]
-Phase 3/6: Configuration Review... [checking FIPS mode settings]
+Phase 3/6: Configuration Review... [checking configuration settings]
 Phase 4/6: Container Analysis... [examining base images and layers]
 Phase 5/6: Integration Points... [checking external connections]
 Phase 6/6: Generating Report... [compiling findings and scores]
@@ -98,7 +98,6 @@ The scanner outputs structured JSON with rich context metadata. Key interpretati
    - Review `false_positive_check.mitigation_details` for explanations
 
 4. **Runtime vs Source Violations**:
-   - Runtime violations (FIPS mode not enabled) are CRITICAL but require system config
    - Source violations require code changes and should be prioritized
 
 **Fallback Commands** (when scanner unavailable or deeper investigation needed):
@@ -228,14 +227,8 @@ When an image reference is provided:
    # Check base image
    docker inspect <image> | jq '.Config.Labels, .Config.Env'
 
-   # Verify OS
-   docker run --rm <image> cat /etc/os-release
-
    # Check crypto packages
    docker run --rm <image> rpm -qa | grep -E 'openssl|crypto|nss|gnutls'
-
-   # Verify FIPS capability
-   docker run --rm <image> fips-mode-setup --check || echo "FIPS tools not available"
    ```
 
 ### 5. Build System Analysis
@@ -369,7 +362,6 @@ echo "[3/5] Updating configuration files..."
 
 # Container fixes
 echo "[4/5] Updating Dockerfile..."
-# Update base image to UBI9
 
 # Verification
 echo "[5/5] Running verification..."
@@ -383,9 +375,6 @@ echo "Remediation complete. Please review changes and run tests."
 Provide specific commands to verify compliance:
 
 ```bash
-# System FIPS status
-fips-mode-setup --check
-
 # Python FIPS verification
 python3 -c "from cryptography.hazmat.backends.openssl import backend; print(backend._fips_enabled)"
 
