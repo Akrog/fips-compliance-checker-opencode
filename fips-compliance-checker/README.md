@@ -103,6 +103,47 @@ The agent proactively activates when you mention:
 - Compilation flags affecting FIPS
 - Environment variables
 
+## Default Exclusions
+
+By default, the scanner excludes non-production code from analysis to focus on actual runtime compliance issues. The following patterns are automatically excluded:
+
+### Test Code
+- `*/tests/*` - Test directories
+- `*/test_*.py` - Test file prefix pattern
+- `*/*_test.py` - Test file suffix pattern
+- `*/conftest.py` - pytest configuration
+
+### Examples & Documentation
+- `*/examples/*`, `*/samples/*` - Example code directories
+- `*/demo/*`, `*/demos/*` - Demo applications
+- `*/docs/examples/*` - Documentation examples
+- `*/tutorials/*` - Tutorial code
+- `*/playground/*` - Experimental/playground code
+
+### Scripts & Utilities
+- `*/benchmarks/*` - Benchmark code
+- `*/scripts/*` - Utility scripts
+- `*/tools/*` - Development tools
+- `*/utilities/*` - Helper utilities
+
+### Build Artifacts
+- `*/venv/*`, `*/.venv/*`, `*/env/*` - Virtual environments
+- `*/build/*`, `*/dist/*` - Build outputs
+- `*/__pycache__/*`, `*/.eggs/*` - Python cache
+- `*/node_modules/*` - Node.js dependencies
+
+### Custom Exclusions
+
+You can add additional exclusion patterns using the `--exclude` flag:
+
+```bash
+# Scan Python code with custom exclusions
+cd fips-compliance-checker/scripts/python
+./scan-python-fips.sh --exclude "*/vendor/*" --exclude "*/legacy/*"
+```
+
+**Note**: Custom exclusions are added to the default patterns (not replacing them).
+
 ## Compliance Report
 
 The agent provides:

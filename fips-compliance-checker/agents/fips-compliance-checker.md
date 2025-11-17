@@ -73,6 +73,16 @@ You will systematically examine:
 2. **Layer 2 - Bandit AST Analysis**: Uses Bandit for deep AST-based crypto detection
 3. **Layer 3 - Pattern Matching**: Grep-based detection for patterns Bandit might miss
 
+**Default File Exclusions**:
+
+The scanner automatically excludes non-production code to focus on actual runtime compliance:
+- **Test code**: `*/tests/*`, `*/test_*.py`, `*/*_test.py`, `*/conftest.py`
+- **Examples**: `*/examples/*`, `*/samples/*`, `*/demo/*`, `*/docs/examples/*`, `*/tutorials/*`, `*/playground/*`
+- **Utilities**: `*/benchmarks/*`, `*/scripts/*`, `*/tools/*`, `*/utilities/*`
+- **Build artifacts**: `*/venv/*`, `*/build/*`, `*/dist/*`, `*/__pycache__/*`
+
+These exclusions apply to all three scanning layers. Custom exclusions can be added via `--exclude` flag if needed for specific use cases.
+
 **Interpreting Scanner Results**:
 
 The scanner outputs structured JSON with rich context metadata. Key interpretation guidelines:

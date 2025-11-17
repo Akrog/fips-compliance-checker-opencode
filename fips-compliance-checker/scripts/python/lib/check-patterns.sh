@@ -10,6 +10,28 @@ PATTERNS_DIR="$(cd "$SCRIPT_DIR/../patterns" && pwd)"
 # Source the context analyzer
 source "$SCRIPT_DIR/context-analyzer.sh"
 
+# Build find command with exclusion patterns
+# Returns a list of Python files that match inclusion criteria and don't match exclusion patterns
+find_python_files() {
+    local target_path="$1"
+    local find_cmd=("find" "$target_path" "-name" "*.py" "-type" "f")
+
+    # Add exclusion patterns from environment variable if set
+    if [ -n "${FIPS_EXCLUDE_PATTERNS:-}" ]; then
+        # Convert space-separated patterns to array
+        local exclude_patterns
+        IFS=' ' read -ra exclude_patterns <<< "$FIPS_EXCLUDE_PATTERNS"
+
+        # Add each pattern as a -not -path filter
+        for pattern in "${exclude_patterns[@]}"; do
+            find_cmd+=("-not" "-path" "$pattern")
+        done
+    fi
+
+    # Execute find command
+    "${find_cmd[@]}" 2>/dev/null || true
+}
+
 # Search for MD5 usage
 check_md5_usage() {
     local target_path="$1"
@@ -78,8 +100,9 @@ check_md5_usage() {
 EOF
 )
         findings+=("$finding")
-    done < <(grep -rn "hashlib\.md5\|from hashlib import md5\|import md5" --include="*.py" \
-        "$target_path" 2>/dev/null | grep -v "^\s*#" || true)
+    done < <(find_python_files "$target_path" | \
+        xargs -r grep -n "hashlib\.md5\|from hashlib import md5\|import md5" 2>/dev/null | \
+        grep -v "^\s*#" || true)
 
     printf '%s\n' "${findings[@]}"
 }
@@ -151,8 +174,9 @@ check_sha1_usage() {
 EOF
 )
         findings+=("$finding")
-    done < <(grep -rn "hashlib\.sha1\|from hashlib import sha1" --include="*.py" \
-        "$target_path" 2>/dev/null | grep -v "^\s*#" || true)
+    done < <(find_python_files "$target_path" | \
+        xargs -r grep -n "hashlib\.sha1\|from hashlib import sha1" 2>/dev/null | \
+        grep -v "^\s*#" || true)
 
     printf '%s\n' "${findings[@]}"
 }
@@ -221,8 +245,9 @@ check_random_module() {
 EOF
 )
         findings+=("$finding")
-    done < <(grep -rn "^import random\|^from random import" --include="*.py" \
-        "$target_path" 2>/dev/null | grep -v "SystemRandom" | grep -v "^\s*#" || true)
+    done < <(find_python_files "$target_path" | \
+        xargs -r grep -n "^import random\|^from random import" 2>/dev/null | \
+        grep -v "SystemRandom" | grep -v "^\s*#" || true)
 
     printf '%s\n' "${findings[@]}"
 }
@@ -292,7 +317,8 @@ check_prohibited_imports() {
 EOF
 )
             findings+=("$finding")
-        done < <(grep -rn "$pattern" --include="*.py" "$target_path" 2>/dev/null | grep -v "^\s*#" || true)
+        done < <(find_python_files "$target_path" | \
+            xargs -r grep -n "$pattern" 2>/dev/null | grep -v "^\s*#" || true)
     done <<< "$patterns"
 
     printf '%s\n' "${findings[@]}"

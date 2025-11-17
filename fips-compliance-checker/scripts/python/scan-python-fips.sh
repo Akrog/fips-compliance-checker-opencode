@@ -13,6 +13,38 @@ OUTPUT_JSON=true
 EXCLUDE_PATTERNS=()
 CONFIG_FILE=""
 
+# Default exclusion patterns for non-production code
+# These patterns filter out test, example, and utility code that shouldn't be scanned
+DEFAULT_EXCLUDE_PATTERNS=(
+    # Test patterns
+    "*/tests/*"
+    "*/test_*.py"
+    "*/*_test.py"
+    "*/conftest.py"
+    # Example/demo patterns
+    "*/examples/*"
+    "*/samples/*"
+    "*/demo/*"
+    "*/demos/*"
+    "*/docs/examples/*"
+    "*/tutorials/*"
+    "*/playground/*"
+    # Script/utility patterns
+    "*/benchmarks/*"
+    "*/scripts/*"
+    "*/tools/*"
+    "*/utilities/*"
+    # Build/environment patterns (always excluded)
+    "*/venv/*"
+    "*/.venv/*"
+    "*/env/*"
+    "*/build/*"
+    "*/dist/*"
+    "*/__pycache__/*"
+    "*/.eggs/*"
+    "*/node_modules/*"
+)
+
 # Usage information
 usage() {
     cat <<EOF
@@ -85,6 +117,30 @@ parse_args() {
                 ;;
         esac
     done
+}
+
+# Combine default and user-provided exclusion patterns
+get_all_exclusions() {
+    local combined=("${DEFAULT_EXCLUDE_PATTERNS[@]}")
+
+    # Add user-provided patterns
+    if [ ${#EXCLUDE_PATTERNS[@]} -gt 0 ]; then
+        combined+=("${EXCLUDE_PATTERNS[@]}")
+    fi
+
+    printf '%s\n' "${combined[@]}"
+}
+
+# Convert exclusion patterns to find command format
+get_find_exclusions() {
+    local patterns=("$@")
+    local find_args=()
+
+    for pattern in "${patterns[@]}"; do
+        find_args+=("-not" "-path" "$pattern")
+    done
+
+    printf '%s\n' "${find_args[@]}"
 }
 
 # Calculate summary statistics from findings
@@ -171,6 +227,11 @@ main() {
     fi
     TARGET_PATH=$(realpath "$TARGET_PATH")
 
+    # Export exclusion patterns for subscripts
+    local all_exclusions
+    mapfile -t all_exclusions < <(get_all_exclusions)
+    export FIPS_EXCLUDE_PATTERNS="${all_exclusions[*]}"
+
     # Start timing
     local start_time
     start_time=$(date +%s)
@@ -234,13 +295,16 @@ main() {
 
     # Count files scanned (approximate)
     local files_scanned
-    files_scanned=$(find "$TARGET_PATH" -name "*.py" -type f \
-        -not -path "*/venv/*" \
-        -not -path "*/.venv/*" \
-        -not -path "*/__pycache__/*" \
-        -not -path "*/build/*" \
-        -not -path "*/dist/*" \
-        2>/dev/null | wc -l)
+    local all_exclusions
+    mapfile -t all_exclusions < <(get_all_exclusions)
+
+    # Build find command with exclusions
+    local find_cmd=("find" "$TARGET_PATH" "-name" "*.py" "-type" "f")
+    for pattern in "${all_exclusions[@]}"; do
+        find_cmd+=("-not" "-path" "$pattern")
+    done
+
+    files_scanned=$("${find_cmd[@]}" 2>/dev/null | wc -l)
 
     # Output results
     if [ "$OUTPUT_JSON" == "true" ]; then
@@ -256,8 +320,7 @@ main() {
   },
   "summary": $summary,
   "overall_status": "$status_text",
-  "findings": $all_findings,
-  "runtime_checks": $(echo "$runtime_result" | jq -r '.runtime_checks // {}')
+  "findings": $all_findings
 }
 EOF
     else

@@ -67,17 +67,40 @@ run_bandit_scan() {
     # B506 - YAML load
     # B507 - SSH no host key verification
 
+    # Build exclusion patterns
+    # Start with basic exclusions that should always be present
+    local exclude_patterns=()
+
+    # Read exclusion patterns from environment variable if set
+    if [ -n "${FIPS_EXCLUDE_PATTERNS:-}" ]; then
+        # Convert space-separated patterns to array
+        IFS=' ' read -ra exclude_patterns <<< "$FIPS_EXCLUDE_PATTERNS"
+    fi
+
+    # Convert patterns to Bandit's glob format (comma-separated with ** prefix)
+    local bandit_exclude=""
+    if [ ${#exclude_patterns[@]} -gt 0 ]; then
+        # Join patterns with commas, ensuring they work with Bandit's glob syntax
+        bandit_exclude=$(printf ",%s" "${exclude_patterns[@]}")
+        bandit_exclude="${bandit_exclude:1}"  # Remove leading comma
+    fi
+
     # Run Bandit in a container with the target path mounted
     # Use :Z for SELinux labeling on RHEL/Fedora systems
-    local bandit_output
-    bandit_output=$("$CONTAINER_RUNTIME" run --rm \
+    local bandit_cmd=("$CONTAINER_RUNTIME" run --rm \
         -v "${target_path}:/scan:Z" \
         -w /scan \
         "$BANDIT_IMAGE" \
         -f json -r /scan \
-        -t B303,B304,B305,B311,B324,B501,B502,B503,B504,B505 \
-        --exclude '**/venv/*,**/.venv/*,**/env/*,**/build/*,**/dist/*,**/__pycache__/*' \
-        2>/dev/null || true)
+        -t B303,B304,B305,B311,B324,B501,B502,B503,B504,B505)
+
+    # Add exclusion patterns if any exist
+    if [ -n "$bandit_exclude" ]; then
+        bandit_cmd+=(--exclude "$bandit_exclude")
+    fi
+
+    local bandit_output
+    bandit_output=$("${bandit_cmd[@]}" 2>/dev/null || true)
 
     echo "$bandit_output"
 }
