@@ -187,14 +187,14 @@ main() {
 
     # Phase 1: Dependency Analysis
     if [ "$OUTPUT_JSON" != "true" ]; then
-        echo "Phase 1/4: Dependency Analysis..."
+        echo "Phase 1/3: Dependency Analysis..."
     fi
     local dep_findings
     dep_findings=$("$LIB_DIR/check-dependencies.sh" "$TARGET_PATH" 2>/dev/null || echo "[]")
 
     # Phase 2: Bandit/AST Analysis
     if [ "$OUTPUT_JSON" != "true" ]; then
-        echo "Phase 2/4: Source Code Analysis (Bandit)..."
+        echo "Phase 2/3: Source Code Analysis (Bandit)..."
     fi
     local bandit_result
     bandit_result=$("$LIB_DIR/analyze-source.sh" "$TARGET_PATH" 2>/dev/null || echo '{"findings": []}')
@@ -203,23 +203,14 @@ main() {
 
     # Phase 3: Pattern Matching
     if [ "$OUTPUT_JSON" != "true" ]; then
-        echo "Phase 3/4: Pattern-Based Detection..."
+        echo "Phase 3/3: Pattern-Based Detection..."
     fi
     local pattern_findings
     pattern_findings=$("$LIB_DIR/check-patterns.sh" "$TARGET_PATH" 2>/dev/null || echo "[]")
 
-    # Phase 4: Runtime Verification
-    if [ "$OUTPUT_JSON" != "true" ]; then
-        echo "Phase 4/4: Runtime Verification..."
-    fi
-    local runtime_result
-    runtime_result=$("$LIB_DIR/verify-runtime.sh" 2>/dev/null || echo '{"findings": []}')
-    local runtime_findings
-    runtime_findings=$(echo "$runtime_result" | jq -r '.findings // []')
-
     # Combine all findings
     local all_findings
-    all_findings=$(jq -s 'add' <(echo "$dep_findings") <(echo "$bandit_findings") <(echo "$pattern_findings") <(echo "$runtime_findings"))
+    all_findings=$(jq -s 'add' <(echo "$dep_findings") <(echo "$bandit_findings") <(echo "$pattern_findings"))
 
     # Calculate statistics
     local end_time
