@@ -68,7 +68,7 @@ Each plugin is a self-contained directory containing:
 ### fips-compliance-checker
 **Purpose**: FIPS 140-3 compliance auditing for containerized applications on RHEL 9+
 
-**Agent**: `fips-compliance-checker`
+**Agent**: `fips-compliance-checker:fips-compliance-checker`
 - Scans source code, dependencies, and containers for FIPS compliance violations
 - Identifies non-compliant cryptographic libraries and algorithms
 - Provides detailed remediation guidance with code examples
