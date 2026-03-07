@@ -73,6 +73,15 @@ The FIPS agent follows a strict 5-phase scanning process:
 - MEDIUM: Approved algorithms without provider verification
 - LOW: Configuration improvements or best practices
 
+### Suppressing Findings via CLAUDE.md
+
+Developers can suppress specific findings by adding a FIPS section to their project's
+`CLAUDE.md`. The agent reads this file at scan start and honours any suppression
+instructions. Suppressed findings are reported with `"status": "SUPPRESSED"` in JSON
+output and are excluded from the compliance score.
+
+See `README.md` for examples and guidance.
+
 ## Development Guidelines
 
 ### Modifying the Agent
@@ -80,6 +89,8 @@ The FIPS agent follows a strict 5-phase scanning process:
 1. Edit `agents/fips-compliance-checker.md`
 2. Test with sample projects in `tests/fixtures/`
 3. Update documentation as needed
+4. When changing suppression-related behaviour, verify that suppressed findings are
+   never silently dropped — they must appear in output with `"status": "SUPPRESSED"`
 
 ### Adding Scanning Capabilities
 

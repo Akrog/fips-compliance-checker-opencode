@@ -158,6 +158,87 @@ cd scripts/python
 
 **Note**: Custom exclusions are added to the default patterns (not replacing them).
 
+## Suppressing Findings
+
+Sometimes a finding is intentional and has been reviewed — for example, a non-FIPS
+library used only in CI, or a legacy module being decommissioned. You can tell the
+FIPS agent to suppress specific findings by adding a FIPS section to your project's
+`CLAUDE.md` file.
+
+This works because Claude Code agents read `CLAUDE.md` as first-class context. No
+plugin configuration files or code changes are needed.
+
+### How to Add Suppressions
+
+Create or edit `CLAUDE.md` in your project root and add a FIPS section:
+
+```markdown
+## FIPS Compliance Checker
+
+When running FIPS compliance scans, do not report violations for:
+- `pycryptodome` in `dev-requirements.txt` — CI-only, never deployed to production
+- Files under `src/legacy/` — being decommissioned in Q3, excluded from compliance scope
+- MD5 in `utils/cache_keys.py` — non-security checksums, uses `usedforsecurity=False`
+```
+
+The agent recognises headings that contain "FIPS" combined with "suppression",
+"exclusion", "exception", or "compliance" (e.g. `## FIPS Suppressions`,
+`## FIPS Exclusions`, `## FIPS Compliance Checker`).
+
+### Examples
+
+**Path-based** — exclude an entire directory:
+
+```markdown
+- `src/legacy/` — being decommissioned in Q3, excluded from compliance scope
+```
+
+**Package-based** — accept a specific dependency:
+
+```markdown
+- `pycryptodome` in `dev-requirements.txt` — CI test dependency, never shipped to production
+```
+
+**Usage-specific** — suppress a particular call site:
+
+```markdown
+- MD5 in `utils/cache_keys.py` — non-security cache key generation, uses `usedforsecurity=False`
+```
+
+### What Makes a Good Suppression
+
+- **Include a rationale** — why is this finding acceptable?
+- **Scope as narrowly as possible** — prefer a specific file or package over a whole directory
+- **Reference a decision record** — link a ticket, PR, or reviewer who approved the exception
+
+### How Suppressions Appear in the Report
+
+Suppressed findings are **never silently dropped**. They appear in the JSON output
+with `"status": "SUPPRESSED"` and a `"suppression"` field recording the reason:
+
+```json
+{
+  "id": "DEP-001",
+  "severity": "CRITICAL",
+  "status": "SUPPRESSED",
+  "location": { "file": "dev-requirements.txt" },
+  "detection": { "name": "pycryptodome" },
+  "suppression": {
+    "suppressed_by": "CLAUDE.md",
+    "reason": "CI test dependency, never shipped to production"
+  }
+}
+```
+
+Suppressed findings are listed separately in the Executive Summary and do not count
+toward compliance score penalties.
+
+### Relationship to `.fips-compliance.yaml`
+
+`.fips-compliance.yaml` is for CI/CD script invocations of the shell-based scanner.
+`CLAUDE.md` suppressions apply to interactive Claude Code agent sessions. The two
+mechanisms are complementary — use whichever matches the context.
+
 ## Compliance Report
 
 The agent provides:
