@@ -1,37 +1,39 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code when working with this repository.
+This file provides guidance to OpenCode when working with this repository.
 
 ## Repository Purpose
 
-This repository contains the **FIPS Compliance Checker** plugin for Claude Code. It provides FIPS 140-3 compliance auditing capabilities for containerized applications running on Red Hat Enterprise Linux 9 (or later).
+This repository contains the **FIPS Compliance Checker** for OpenCode — a port of
+the [Claude Code plugin](https://github.com/opendatahub-io/fips-compliance-checker-claude-code-plugin)
+(the `upstream` git remote). It provides FIPS 140-3 compliance auditing
+capabilities for containerized applications running on Red Hat Enterprise Linux
+9 (or later).
 
 ## Repository Structure
 
 ```
-fips-compliance-checker/
-├── .claude-plugin/
-│   └── plugin.json               # Plugin metadata
+fips-compliance-checker-opencode/
 ├── agents/
-│   └── fips-compliance-checker.md    # Agent definition
+│   └── fips-compliance-checker.md    # OpenCode subagent definition
 ├── commands/
-│   └── fips-scan.md              # Slash command
+│   └── fips-scan.md                  # /fips-scan command
 ├── scripts/
-│   └── python/                   # Python scanning tools
+│   └── python/                       # Python scanning tools
 │       ├── scan-python-fips.sh
-│       ├── lib/                  # Scanning library scripts
-│       └── patterns/             # Detection patterns
-├── tests/                        # Integration tests
-├── CLAUDE.md                     # This file
-└── README.md                     # User documentation
+│       ├── lib/                      # Scanning library scripts
+│       └── patterns/                 # Detection patterns
+├── tests/                            # Integration tests
+├── AGENTS.md                         # This file
+└── README.md                         # User documentation
 ```
 
-## Plugin Components
+## Components
 
 ### Agent: fips-compliance-checker
 
 **File**: `agents/fips-compliance-checker.md`
-**Full Reference**: `fips-compliance-checker:fips-compliance-checker`
+**ID**: `fips-compliance-checker` (mode: subagent)
 
 The agent performs comprehensive FIPS 140-3 compliance auditing including:
 - Scanning source code for cryptographic operations
@@ -46,12 +48,13 @@ The agent performs comprehensive FIPS 140-3 compliance auditing including:
 - User mentions FIPS, compliance, or security certifications
 - User is working with crypto libraries in Java, Python, Go, Rust, or C/C++
 
-### Slash Command: fips-scan
+### Command: fips-scan
 
 **File**: `commands/fips-scan.md`
-**Invocation**: `/fips-compliance-checker:fips-scan [image]`
+**Invocation**: `/fips-scan [image]`
 
-Explicit invocation for FIPS compliance scanning with optional container image argument.
+Explicit invocation for FIPS compliance scanning with optional container image
+argument. Runs the `fips-compliance-checker` agent in a child session.
 
 ## Working with the FIPS Agent
 
@@ -73,12 +76,13 @@ The FIPS agent follows a strict 5-phase scanning process:
 - MEDIUM: Approved algorithms without provider verification
 - LOW: Configuration improvements or best practices
 
-### Suppressing Findings via CLAUDE.md
+### Suppressing Findings via AGENTS.md
 
-Developers can suppress specific findings by adding a FIPS section to their project's
-`CLAUDE.md`. The agent reads this file at scan start and honours any suppression
-instructions. Suppressed findings are reported with `"status": "SUPPRESSED"` in JSON
-output and are excluded from the compliance score.
+Developers can suppress specific findings by adding a FIPS section to their
+project's `AGENTS.md`. The agent reads this file at scan start and honours any
+suppression instructions. Suppressed findings are reported with
+`"status": "SUPPRESSED"` in JSON output and are excluded from the compliance
+score.
 
 See `README.md` for examples and guidance.
 
@@ -91,6 +95,10 @@ See `README.md` for examples and guidance.
 3. Update documentation as needed
 4. When changing suppression-related behaviour, verify that suppressed findings are
    never silently dropped — they must appear in output with `"status": "SUPPRESSED"`
+
+The agent prompt invokes the Python scanner via this repository's absolute path
+(`~/code/fips-compliance-checker-opencode/scripts/python/scan-python-fips.sh`).
+If the repository moves, update that path in the agent prompt.
 
 ### Adding Scanning Capabilities
 
@@ -105,50 +113,15 @@ See `README.md` for examples and guidance.
 ./tests/test-python-scanner.sh
 ```
 
-## External Reference
-
-Other Claude Code marketplaces can reference this plugin via Git URL.
-
-### In marketplace.json
-
-```json
-{
-  "name": "my-marketplace",
-  "plugins": [
-    {
-      "name": "fips-compliance-checker",
-      "source": "git@gitlab.cee.redhat.com:gryan/gryan-claude-plugins.git",
-      "description": "FIPS 140-3 compliance auditing for RHEL 9+"
-    }
-  ]
-}
-```
-
-### Via HTTPS
-
-```json
-{
-  "source": "https://gitlab.cee.redhat.com/gryan/gryan-claude-plugins.git"
-}
-```
-
-When referenced via Git URL, Claude Code plugin system will:
-1. Clone/fetch the repository
-2. Look for `.claude-plugin/plugin.json` at the root
-3. Load agents from `agents/` directory
-4. Load commands from `commands/` directory
-
 ## Agent Prompt Format
 
-Agent prompts use YAML frontmatter for configuration:
+Agent prompts use YAML frontmatter for configuration. OpenCode fields:
 
 ```markdown
 ---
-name: agent-identifier
-description: When to invoke this agent with examples
-tools: Glob, Grep, Read, Bash, etc.
-model: inherit|sonnet|opus|haiku
-color: red|blue|green|etc.
+description: When to invoke this agent, with examples
+mode: subagent
+color: "#ff6b6b"
 ---
 
 # Agent system prompt goes here
@@ -156,7 +129,6 @@ color: red|blue|green|etc.
 
 **Critical Sections for Agent Prompts**:
 - Clear invocation criteria with user/assistant dialogue examples
-- Specific tool access requirements
 - Detailed operating procedures and scanning phases
 - Structured output format specifications
 - Quality assurance checklists

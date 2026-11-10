@@ -1,6 +1,8 @@
 # FIPS 140-3 Compliance Checker
 
-A Claude Code plugin that provides comprehensive FIPS 140-3 compliance auditing for containerized applications running on Red Hat Enterprise Linux 9 (or later).
+An [OpenCode](https://opencode.ai) agent and command set that provides comprehensive FIPS 140-3 compliance auditing for containerized applications running on Red Hat Enterprise Linux 9 (or later).
+
+This is a port of the [Claude Code plugin](https://github.com/opendatahub-io/fips-compliance-checker-claude-code-plugin) of the same name; the upstream `upstream` git remote points at it.
 
 ## Overview
 
@@ -13,25 +15,21 @@ This plugin helps ensure your applications meet FIPS 140-3 cryptographic complia
 
 ## Installation
 
-### Via Git URL (Direct Reference)
-
-Add this plugin directly via Git URL:
+Clone this repository, then symlink the agent and command into your OpenCode
+global configuration (adjust paths if you cloned elsewhere):
 
 ```bash
-# SSH
-/plugin add git@github.com:grdryn/fips-compliance-checker-claude-code-plugin.git
-
-# HTTPS
-/plugin add https://github.com/grdryn/fips-compliance-checker-claude-code-plugin
+git clone <this-repository> ~/code/fips-compliance-checker-opencode
+ln -s ~/code/fips-compliance-checker-opencode/agents/fips-compliance-checker.md \
+      ~/.config/opencode/agents/fips-compliance-checker.md
+mkdir -p ~/.config/opencode/commands
+ln -s ~/code/fips-compliance-checker-opencode/commands/fips-scan.md \
+      ~/.config/opencode/commands/fips-scan.md
 ```
 
-### Via Marketplace
-
-If a marketplace includes this plugin, install via:
-
-```
-/plugin install fips-compliance-checker@<marketplace-name>
-```
+OpenCode picks up new agents and commands without a restart. The agent invokes
+the Python scanner at this repository's absolute path, so do not move or delete
+the clone after installing.
 
 ## Prerequisites
 
@@ -60,17 +58,15 @@ docker pull ghcr.io/pycqa/bandit/bandit:latest
 
 ### Slash Command (Explicit)
 
-Use the fully-qualified `/fips-compliance-checker:fips-scan` command for direct invocation:
+Use the `/fips-scan` command for direct invocation:
 
 ```bash
 # Scan the current project
-/fips-compliance-checker:fips-scan
+/fips-scan
 
 # Scan a specific container image
-/fips-compliance-checker:fips-scan quay.io/myorg/myapp:v1.2.3
+/fips-scan quay.io/myorg/myapp:v1.2.3
 ```
-
-Note: Claude Code CLI currently requires the fully-qualified format `/plugin-name:command-name`.
 
 ### Natural Language (Auto-selection)
 
@@ -163,14 +159,14 @@ cd scripts/python
 Sometimes a finding is intentional and has been reviewed — for example, a non-FIPS
 library used only in CI, or a legacy module being decommissioned. You can tell the
 FIPS agent to suppress specific findings by adding a FIPS section to your project's
-`CLAUDE.md` file.
+`AGENTS.md` file.
 
-This works because Claude Code agents read `CLAUDE.md` as first-class context. No
+This works because OpenCode agents read `AGENTS.md` as first-class context. No
 plugin configuration files or code changes are needed.
 
 ### How to Add Suppressions
 
-Create or edit `CLAUDE.md` in your project root and add a FIPS section:
+Create or edit `AGENTS.md` in your project root and add a FIPS section:
 
 ```markdown
 ## FIPS Compliance Checker
@@ -224,7 +220,7 @@ with `"status": "SUPPRESSED"` and a `"suppression"` field recording the reason:
   "location": { "file": "dev-requirements.txt" },
   "detection": { "name": "pycryptodome" },
   "suppression": {
-    "suppressed_by": "CLAUDE.md",
+    "suppressed_by": "AGENTS.md",
     "reason": "CI test dependency, never shipped to production"
   }
 }
@@ -236,7 +232,7 @@ toward compliance score penalties.
 ### Relationship to `.fips-compliance.yaml`
 
 `.fips-compliance.yaml` is for CI/CD script invocations of the shell-based scanner.
-`CLAUDE.md` suppressions apply to interactive Claude Code agent sessions. The two
+`AGENTS.md` suppressions apply to interactive OpenCode agent sessions. The two
 mechanisms are complementary — use whichever matches the context.
 
 ## Compliance Report
@@ -301,8 +297,7 @@ Total Score:             [X/100]
 ## Agent Details
 
 **Agent Name**: `fips-compliance-checker`
-**Full Reference**: `fips-compliance-checker:fips-compliance-checker`
-**Available Tools**: Glob, Grep, Read, WebFetch, TodoWrite, Bash, SlashCommand
+**Command**: `/fips-scan`
 
 ## Further Reading
 
@@ -312,4 +307,4 @@ Total Score:             [X/100]
 
 ## Contributing
 
-See [CLAUDE.md](./CLAUDE.md) for plugin development guidelines.
+See [AGENTS.md](./AGENTS.md) for development guidelines.
